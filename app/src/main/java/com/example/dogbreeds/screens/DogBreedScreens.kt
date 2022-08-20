@@ -4,7 +4,9 @@ import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -13,34 +15,53 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.example.dogbreeds.R
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.filterNotNull
+import kotlinx.coroutines.launch
 
 @Composable
 fun DogBreedsScreen() {
-    var selectedTabIndex by remember { mutableStateOf(0) }
+    var userSelectedTabIndex by remember { mutableStateOf(-1) }
+    val coroutineScope = rememberCoroutineScope()
+    val lazyListState = rememberLazyListState()
+    val selectedTabIndex by produceState(0) {
+        launch {
+            snapshotFlow { userSelectedTabIndex }
+                .combine(snapshotFlow { lazyListState.firstVisibleItemIndex }) { userSelectedIndex, scrollIndex ->
+                    when {
+                        userSelectedTabIndex > -1 -> {
+                            userSelectedTabIndex = -1
+                            userSelectedIndex
+                        }
+                        lazyListState.isScrollInProgress -> scrollIndex
+                        else -> null
+                    }
+                }
+                .filterNotNull()
+                .collect { index -> value = index }
+        }
+    }
+
     DogBreedsScreenContent(
         modifier = Modifier.fillMaxSize(),
+        lazyListState = lazyListState,
         selectedTabIndex = selectedTabIndex,
         tabInfos = getTabInfos(),
         breedInfos = getBreedInfos(),
-        onTabClicked = { selectedTabIndex = it }
-    )
-}
-
-@Composable
-@Preview
-private fun DogBreedsScreenPreview() {
-    DogBreedsScreenContent(
-        modifier = Modifier.fillMaxSize(),
-        selectedTabIndex = 0,
-        tabInfos = getTabInfos(),
-        breedInfos = getBreedInfos(),
-        onTabClicked = { }
+        onTabClicked = { index ->
+            coroutineScope.launch {
+                lazyListState.scrollToItem(index)
+            }
+            userSelectedTabIndex = index
+        }
     )
 }
 
 @Composable
 private fun DogBreedsScreenContent(
     modifier: Modifier = Modifier,
+    lazyListState: LazyListState,
     selectedTabIndex: Int,
     tabInfos: List<TabInfo>,
     breedInfos: List<BreedInfo>,
@@ -56,7 +77,7 @@ private fun DogBreedsScreenContent(
             )
         }
     ) {
-        LazyColumn {
+        LazyColumn(state = lazyListState) {
             items(breedInfos) {
                 BreedCard(
                     modifier = Modifier.fillMaxSize(),
@@ -65,6 +86,19 @@ private fun DogBreedsScreenContent(
             }
         }
     }
+}
+
+@Composable
+@Preview
+private fun DogBreedsScreenPreview() {
+    DogBreedsScreenContent(
+        modifier = Modifier.fillMaxSize(),
+        lazyListState = rememberLazyListState(),
+        selectedTabIndex = 0,
+        tabInfos = getTabInfos(),
+        breedInfos = getBreedInfos(),
+        onTabClicked = { }
+    )
 }
 
 @Composable
