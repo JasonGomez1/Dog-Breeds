@@ -77,12 +77,18 @@ private fun DogBreedsScreenContent(
             )
         }
     ) {
-        LazyColumn(state = lazyListState) {
+        LazyColumn(
+            modifier = Modifier.fillMaxHeight(),
+            state = lazyListState
+        ) {
             items(breedInfos) {
                 BreedCard(
                     modifier = Modifier.fillMaxSize(),
                     breedInfo = it
                 )
+            }
+            item {
+                Footer()
             }
         }
     }
@@ -164,6 +170,18 @@ private fun BreedCard(modifier: Modifier = Modifier, breedInfo: BreedInfo) {
             }
         }
     }
+}
+
+@Composable
+private fun Footer() {
+    Card(
+        modifier = Modifier
+            .padding(8.dp)
+            .height(200.dp)
+            .fillMaxWidth(),
+        elevation = 4.dp,
+        content = {}
+    )
 }
 
 private data class TabInfo(
