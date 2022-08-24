@@ -1,6 +1,5 @@
 package com.example.dogbreeds.screens
 
-import android.util.Log
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.*
@@ -16,7 +15,6 @@ import androidx.compose.ui.layout.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import com.example.dogbreeds.BuildConfig
 import com.example.dogbreeds.R
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -28,16 +26,14 @@ fun DogBreedsScreen() {
     val lazyListState = rememberLazyListState()
     val selectedTabIndex by produceState(0) {
         launch {
-            // First visible item index is accurately assessed, but selectedTabIndex does not reflect this
-            // Could it be related to isScrollInProgress?
             snapshotFlow { userSelectedTabIndex }
                 .combine(snapshotFlow { lazyListState.firstVisibleItemIndex }) { userSelectedIndex, scrollIndex ->
                     when {
-                        userSelectedTabIndex > -1 -> {
+                        userSelectedIndex > -1 -> {
                             userSelectedTabIndex = -1
                             userSelectedIndex
                         }
-                        lazyListState.isScrollInProgress -> scrollIndex
+                        userSelectedIndex == -1 -> scrollIndex
                         else -> null
                     }
                 }
@@ -50,7 +46,6 @@ fun DogBreedsScreen() {
         modifier = Modifier.fillMaxSize(),
         lazyListState = lazyListState,
         selectedTabIndex = selectedTabIndex,
-        tabInfos = getTabInfos(),
         breedInfos = getBreedInfos(),
         onTabClicked = { index ->
             coroutineScope.launch {
@@ -66,7 +61,6 @@ private fun DogBreedsScreenContent(
     modifier: Modifier = Modifier,
     lazyListState: LazyListState,
     selectedTabIndex: Int,
-    tabInfos: List<TabInfo>,
     breedInfos: List<BreedInfo>,
     onTabClicked: (Int) -> Unit
 ) {
@@ -75,7 +69,7 @@ private fun DogBreedsScreenContent(
         topBar = {
             DogBreedsTabBar(
                 selectedTabIndex = selectedTabIndex,
-                tabInfos = tabInfos,
+                tabInfos = breedInfos,
                 onTabClicked = onTabClicked
             )
         }
@@ -91,7 +85,7 @@ private fun DogBreedsScreenContent(
                 )
             }
             item {
-                Footer(lazyListState)
+                Footer(Modifier.resizableFooter(lazyListState))
             }
         }
     }
@@ -104,7 +98,6 @@ private fun DogBreedsScreenPreview() {
         modifier = Modifier.fillMaxSize(),
         lazyListState = rememberLazyListState(),
         selectedTabIndex = 0,
-        tabInfos = getTabInfos(),
         breedInfos = getBreedInfos(),
         onTabClicked = { }
     )
@@ -114,7 +107,7 @@ private fun DogBreedsScreenPreview() {
 private fun DogBreedsTabBar(
     modifier: Modifier = Modifier,
     selectedTabIndex: Int,
-    tabInfos: List<TabInfo>,
+    tabInfos: List<BreedInfo>,
     onTabClicked: (Int) -> Unit
 ) {
     ScrollableTabRow(
@@ -127,11 +120,11 @@ private fun DogBreedsTabBar(
             Tab(
                 selected = selectedTabIndex == index,
                 onClick = {
-                    onTabClicked(tabInfo.index)
+                    onTabClicked(index)
                 },
                 text = {
                     Text(
-                        text = tabInfo.title
+                        text = tabInfo.name
                     )
                 }
             )
@@ -176,32 +169,21 @@ private fun BreedCard(modifier: Modifier = Modifier, breedInfo: BreedInfo) {
 }
 
 @Composable
-private fun Footer(lazyListState: LazyListState) {
+private fun Footer(modifier: Modifier = Modifier) {
     Card(
-        modifier = Modifier
+        modifier = modifier
             .padding(8.dp)
-            .fillMaxSize()
-            .bleh(lazyListState),
+            .fillMaxSize(),
         elevation = 4.dp,
         content = {}
     )
 }
 
-class Ref(var value: Int)
-
-// Note the inline function below which ensures that this function is essentially
-// copied at the call site to ensure that its logging only recompositions from the
-// original call site.
-@Composable
-inline fun LogCompositions(tag: String, msg: String) {
-    if (BuildConfig.DEBUG) {
-        val ref = remember { Ref(0) }
-        SideEffect { ref.value++ }
-        Log.d(tag, "Compositions: $msg ${ref.value}")
-    }
-}
-
-private fun Modifier.bleh(
+/**
+ * Footer that pushes the last item to the top of the Viewport. It ensures that the last
+ * visible item's tab is selected.
+ */
+private fun Modifier.resizableFooter(
     lazyListState: LazyListState
 ) = layout { measurable, constraints ->
     val layoutInfo = lazyListState.layoutInfo
@@ -214,27 +196,11 @@ private fun Modifier.bleh(
     }
 }
 
-private data class TabInfo(
-    val title: String,
-    val index: Int
-)
-
 private data class BreedInfo(
     val name: String,
     @DrawableRes val image: Int,
     val description: String
 )
-
-private fun getTabInfos(): List<TabInfo> =
-    listOf(
-        TabInfo("Bulldog", 0),
-        TabInfo("German Shepherd", 1),
-        TabInfo("Labrador Retriever", 2),
-        TabInfo("Golden Retriever", 3),
-        TabInfo("Poodle", 4),
-        TabInfo("Siberian Husky", 5),
-        TabInfo("French Bulldog", 6)
-    )
 
 private fun getBreedInfos(): List<BreedInfo> =
     listOf(
