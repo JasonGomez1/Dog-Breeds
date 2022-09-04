@@ -2,6 +2,7 @@ package com.example.dogbreeds.screens
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -11,6 +12,7 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -174,7 +176,7 @@ private fun Footer(modifier: Modifier = Modifier) {
         modifier = modifier
             .padding(8.dp)
             .fillMaxSize(),
-        elevation = 4.dp,
+        elevation = 0.dp,
         content = {}
     )
 }
