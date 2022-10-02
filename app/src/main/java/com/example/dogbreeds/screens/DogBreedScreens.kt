@@ -2,7 +2,6 @@ package com.example.dogbreeds.screens
 
 import androidx.annotation.DrawableRes
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
@@ -12,7 +11,6 @@ import androidx.compose.material.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.*
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -23,9 +21,11 @@ import kotlinx.coroutines.launch
 
 @Composable
 fun DogBreedsScreen() {
+    // Tab selected by the user from DogBreedsTabBar
     var userSelectedTabIndex by remember { mutableStateOf(-1) }
     val coroutineScope = rememberCoroutineScope()
     val lazyListState = rememberLazyListState()
+    // Uses the first visible item and user-selected tab index to determine the current tab index
     val selectedTabIndex by produceState(0) {
         launch {
             snapshotFlow { userSelectedTabIndex }
@@ -87,7 +87,7 @@ private fun DogBreedsScreenContent(
                 )
             }
             item {
-                Footer(Modifier.resizableFooter(lazyListState))
+                Footer(Modifier.resizeLastListItem(lazyListState))
             }
         }
     }
@@ -182,10 +182,10 @@ private fun Footer(modifier: Modifier = Modifier) {
 }
 
 /**
- * Footer that pushes the last item to the top of the Viewport. It ensures that the last
- * visible item's tab is selected.
+ * Resizes the last N item of the list in such a way that it pushes the N-1 item
+ * to the top of the Viewport
  */
-private fun Modifier.resizableFooter(
+private fun Modifier.resizeLastListItem(
     lazyListState: LazyListState
 ) = layout { measurable, constraints ->
     val layoutInfo = lazyListState.layoutInfo
